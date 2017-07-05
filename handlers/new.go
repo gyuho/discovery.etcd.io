@@ -16,6 +16,7 @@ import (
 
 	"github.com/coreos/discovery.etcd.io/handlers/httperror"
 	"github.com/coreos/etcd/client"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -42,13 +43,14 @@ func generateCluster() string {
 	return hex.EncodeToString(b)
 }
 
-func Setup(etcdCURL, disc string) *State {
+func Setup(etcdCURL, disc string, useV3 bool) *State {
 	u, _ := url.Parse(etcdCURL)
 	return &State{
 		etcdHost:      etcdCURL,
 		etcdCURL:      u,
 		currentLeader: u.Host,
 		discHost:      disc,
+		useV3:         useV3,
 	}
 }
 
@@ -58,38 +60,65 @@ func (st *State) setupToken(size int) (string, error) {
 		return "", errors.New("Couldn't generate a token")
 	}
 
-	c, _ := client.New(client.Config{
-		Endpoints: []string{st.endpoint()},
-		Transport: client.DefaultTransport,
-		// set timeout per request to fail fast when the target endpoint is unavailable
-		HeaderTimeoutPerRequest: time.Second,
-	})
-	kapi := client.NewKeysAPI(c)
+	eps := []string{st.endpoint()}
+	pfx := path.Join("_etcd", "registry", token)
+	key, val := path.Join(pfx, "_config", "size"), strconv.Itoa(size)
 
-	key := path.Join("_etcd", "registry", token)
-	resp, err := kapi.Create(context.Background(), path.Join(key, "_config", "size"), strconv.Itoa(size))
-	if err != nil {
-		return "", errors.New(fmt.Sprintf("Couldn't setup state %v %v", resp, err))
+	if st.isV3() {
+		c, err := clientv3.New(clientv3.Config{Endpoints: eps, DialTimeout: time.Second})
+		if err != nil {
+			return "", err
+		}
+		defer c.Close()
+		resp, err := c.Put(context.Background(), key, val)
+		if err != nil {
+			return "", fmt.Errorf("Couldn't setup state %v %v (v3)", resp, err)
+		}
+	} else {
+		c, _ := client.New(client.Config{
+			Endpoints: eps,
+			Transport: client.DefaultTransport,
+			// set timeout per request to fail fast when the target endpoint is unavailable
+			HeaderTimeoutPerRequest: time.Second,
+		})
+		kapi := client.NewKeysAPI(c)
+		resp, err := kapi.Create(context.Background(), key, val)
+		if err != nil {
+			return "", fmt.Errorf("Couldn't setup state %v %v", resp, err)
+		}
 	}
+
 	return token, nil
 }
 
 func (st *State) deleteToken(token string) error {
+	if token == "" {
+		return errors.New("No token given")
+	}
+
+	eps := []string{st.endpoint()}
+	pfx := path.Join("_etcd", "registry", token)
+
+	if st.isV3() {
+		c, err := clientv3.New(clientv3.Config{Endpoints: eps, DialTimeout: time.Second})
+		if err != nil {
+			return err
+		}
+		defer c.Close()
+		_, err = c.Delete(context.Background(), pfx, clientv3.WithPrefix())
+		return err
+	}
+
 	c, _ := client.New(client.Config{
-		Endpoints: []string{st.endpoint()},
+		Endpoints: eps,
 		Transport: client.DefaultTransport,
 		// set timeout per request to fail fast when the target endpoint is unavailable
 		HeaderTimeoutPerRequest: time.Second,
 	})
 	kapi := client.NewKeysAPI(c)
-
-	if token == "" {
-		return errors.New("No token given")
-	}
-
 	_, err := kapi.Delete(
 		context.Background(),
-		path.Join("_etcd", "registry", token),
+		pfx,
 		&client.DeleteOptions{Recursive: true},
 	)
 	return err

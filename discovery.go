@@ -54,10 +54,12 @@ func init() {
 	pflag.StringP("etcd", "e", "http://127.0.0.1:2379", "etcd endpoint location")
 	pflag.StringP("host", "h", "https://discovery.etcd.io", "discovery url prefix")
 	pflag.StringP("addr", "a", ":8087", "web service address")
+	pflag.BoolP("use-v3", "3", false, "'true' to use v3 API")
 
 	viper.BindPFlag("etcd", pflag.Lookup("etcd"))
 	viper.BindPFlag("host", pflag.Lookup("host"))
 	viper.BindPFlag("addr", pflag.Lookup("addr"))
+	viper.BindPFlag("use-v3", pflag.Lookup("use-v3"))
 
 	pflag.Parse()
 }
@@ -67,8 +69,14 @@ func main() {
 	etcdHost := mustHostOnlyURL(viper.GetString("etcd"))
 	discHost := mustHostOnlyURL(viper.GetString("host"))
 	webAddr := viper.GetString("addr")
+	useV3 := viper.GetBool("use-v3")
 
-	handling.Setup(context.Background(), etcdHost, discHost)
+	if useV3 {
+		panic(`TODO: v3 is not supported yet
+See https://github.com/coreos/etcd/issues/8209 for more detail.`)
+	}
+
+	handling.Setup(context.Background(), etcdHost, discHost, useV3)
 
 	log.Printf("discovery server started with etcd %q and host %q", etcdHost, discHost)
 	log.Printf("discovery serving on %s", webAddr)

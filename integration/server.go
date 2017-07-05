@@ -34,7 +34,7 @@ type Service struct {
 const testDiscoveryHost = "handler-test"
 
 // NewService creates a new service.
-func NewService(t *testing.T, etcdClientPort, etcdPeerPort, httpPort int) *Service {
+func NewService(t *testing.T, etcdClientPort, etcdPeerPort, httpPort int, useV3 bool) *Service {
 	dataDir, err := ioutil.TempDir(os.TempDir(), "test-data")
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ func NewService(t *testing.T, etcdClientPort, etcdPeerPort, httpPort int) *Servi
 		httpEp: fmt.Sprintf("http://localhost:%d", httpPort),
 		httpServer: &http.Server{
 			Addr:    fmt.Sprintf("localhost:%d", httpPort),
-			Handler: discoveryhttp.RegisterHandlers(ctx, cfg.LCUrls[0].String(), testDiscoveryHost),
+			Handler: discoveryhttp.RegisterHandlers(ctx, cfg.LCUrls[0].String(), testDiscoveryHost, useV3),
 		},
 		httpErrc: make(chan error),
 	}

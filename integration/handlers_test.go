@@ -29,7 +29,7 @@ func testHandlersV2(t *testing.T, size int) {
 	cport := int(atomic.LoadInt32(&basePort))
 	atomic.AddInt32(&basePort, int32(5))
 
-	svs := NewService(t, cport, cport+1, cport+2)
+	svs := NewService(t, cport, cport+1, cport+2, false)
 	defer svs.Stop(t)
 
 	errc := svs.Start(t)

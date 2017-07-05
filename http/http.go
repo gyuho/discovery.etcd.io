@@ -12,16 +12,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func Setup(ctx context.Context, etcdHost, discHost string) {
-	handler := RegisterHandlers(ctx, etcdHost, discHost)
+func Setup(ctx context.Context, etcdHost, discHost string, useV3 bool) {
+	handler := RegisterHandlers(ctx, etcdHost, discHost, useV3)
 	logH := gorillaHandlers.LoggingHandler(os.Stdout, handler)
 
 	http.Handle("/", logH)
 	http.Handle("/metrics", prometheus.Handler())
 }
 
-func RegisterHandlers(ctx context.Context, etcdHost, discHost string) http.Handler {
-	st := handlers.Setup(etcdHost, discHost)
+func RegisterHandlers(ctx context.Context, etcdHost, discHost string, useV3 bool) http.Handler {
+	st := handlers.Setup(etcdHost, discHost, useV3)
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", handlers.HomeHandler)

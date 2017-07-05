@@ -13,6 +13,7 @@ type State struct {
 	etcdCURL      *url.URL
 	currentLeader string
 	discHost      string
+	useV3         bool // 'true' to use v3 API
 }
 
 func (st *State) endpoint() (ep string) {
@@ -33,4 +34,11 @@ func (st *State) setCurrentLeader(leader string) {
 	st.mu.Lock()
 	st.currentLeader = leader
 	st.mu.Unlock()
+}
+
+func (st *State) isV3() (useV3 bool) {
+	st.mu.RLock()
+	useV3 = st.useV3
+	st.mu.RUnlock()
+	return useV3
 }
