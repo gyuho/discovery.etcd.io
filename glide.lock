@@ -1,5 +1,5 @@
-hash: 7c3ebe6d1434d10f14431dc6ed26122047cbf0200d34aabeba04833012dcc25b
-updated: 2017-07-10T09:20:18.868072273-07:00
+hash: 4b54f8373f5e45fefd434a7deb51f81aeb18b8d75b3946d922dd15a537577c8e
+updated: 2017-07-10T09:59:24.124753287-07:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -102,6 +102,8 @@ imports:
   version: 909568be09de550ed094403c2bf8a261b5bb730a
   subpackages:
   - proto
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
   version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
